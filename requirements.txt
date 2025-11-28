@@ -1,0 +1,9 @@
+opencv-python
+opencv-contrib-python
+numpy
+requests
+pyautogui
+pyperclip
+pillow
+pytesseract
+pyzbar
