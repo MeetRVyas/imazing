@@ -1,9 +1,10 @@
+
 from setuptools import setup, find_packages
 
 setup(
     name="imazing",
     version="1.0.0",
-    description="A complete linrary for Image Processing in Python",
+    description="Image & Video Processing",
     author="Your Name",
     packages=find_packages(),
     install_requires=[
@@ -19,6 +20,7 @@ setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Operating System :: OS Independent",
+        "Topic :: Multimedia :: Graphics",
+        "Topic :: Scientific/Engineering :: Image Recognition",
     ],
 )

@@ -211,3 +211,5 @@ __marimo__/
 *.json
 abcd*
 imazing_old/
+timepass.py
+templates.ipynb
