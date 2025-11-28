@@ -209,5 +209,5 @@ __marimo__/
 # Added by me
 .vscode/
 *.json
-abcd.ipynb
+abcd*
 imazing_old/
