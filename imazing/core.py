@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import requests
 import base64
+import logging
 import os
 from typing import Union, Optional
 
@@ -12,16 +13,23 @@ from .filters import FilterMixin
 from .features import FeatureMixin
 from .draw import DrawMixin
 from .analysis import AnalysisMixin
+from .exceptions import ImageLoadError
+from ._validation import requires_image
+
+logger = logging.getLogger(__name__)
 
 try:
     import pyautogui
-except ImportError:
+except Exception:
+    # Deliberately broad
+    logger.debug("pyautogui unavailable (screen capture will be disabled)", exc_info=True)
     pyautogui = None
 
 try:
     from PIL import Image, ImageGrab
 except ImportError:
     Image = None
+    ImageGrab = None
 
 class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, AnalysisMixin):
     """
@@ -57,16 +65,18 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
             self._load_from_bytes(source)
 
         if self.image is None:
-            raise ValueError("Could not load image from source.")
+            raise ImageLoadError(f"Could not load image from source: {source!r}")
         return self
 
-    def _load_from_url(self, url):
+    def _load_from_url(self, url, timeout=10):
         try:
-            resp = requests.get(url, stream=True).raw
-            arr = np.asarray(bytearray(resp.read()), dtype=np.uint8)
+            resp = requests.get(url, stream=True, timeout=timeout)
+            resp.raise_for_status()
+            arr = np.asarray(bytearray(resp.raw.read()), dtype=np.uint8)
             self.image = cv2.imdecode(arr, cv2.IMREAD_UNCHANGED)
-        except Exception as e:
-            print(f"Error loading URL: {e}")
+        except requests.RequestException as e:
+            logger.error("Failed to fetch image from URL %s: %s", url, e)
+            raise ImageLoadError(f"Could not fetch image from URL: {url}") from e
 
     def _load_from_bytes(self, data):
         arr = np.frombuffer(data, np.uint8)
@@ -122,12 +132,14 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
             with open(path, "wb") as f:
                 f.write(buffer)
 
+    @requires_image
     def to_base64(self, format='.jpg') -> str:
         """Returns Data URI base64 string."""
         _, buffer = cv2.imencode(format, self.image)
         b64 = base64.b64encode(buffer).decode('utf-8')
         return f"data:image/{format[1:]};base64,{b64}"
 
+    @requires_image
     def to_numpy(self):
         return self.image.copy()
 
