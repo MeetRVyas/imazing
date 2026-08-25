@@ -1,9 +1,13 @@
 import cv2
 import numpy as np
 
+from ._validation import requires_image
+
+
 class AnalysisMixin:
     """Handles Statistics and Metadata"""
 
+    @requires_image
     def get_stats(self):
         """Returns basic statistics."""
         return {
@@ -16,6 +20,7 @@ class AnalysisMixin:
             "max": np.max(self.image)
         }
 
+    @requires_image
     def compute_hash(self, size=8):
         """Perceptive hash for duplicate detection (aHash)."""
         resized = cv2.resize(self.image, (size, size))

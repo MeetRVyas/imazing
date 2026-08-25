@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from ._validation import requires_image
+
 # Optional imports handled nicely inside functions or here with checks
 try:
     import pytesseract
@@ -15,6 +17,7 @@ except ImportError:
 class FeatureMixin:
     """Handles Detection, AI, and Recognition"""
 
+    @requires_image
     def detect_contours(self, min_area=100):
         """Finds contours in the image."""
         gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY) if len(self.image.shape) == 3 else self.image
@@ -22,6 +25,7 @@ class FeatureMixin:
         contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         return [c for c in contours if cv2.contourArea(c) > min_area]
 
+    @requires_image
     def match_template(self, template_img, threshold=0.8):
         """Finds a smaller image inside the current image."""
         if len(self.image.shape) == 3:
@@ -38,6 +42,7 @@ class FeatureMixin:
             points.append(pt)
         return points
 
+    @requires_image
     def detect_faces(self, cascade_path=None):
         """Uses Haar Cascades. Defaults to OpenCV's built-in frontal face."""
         if cascade_path is None:
@@ -49,6 +54,7 @@ class FeatureMixin:
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
         return faces # Returns list of Rect (x,y,w,h)
 
+    @requires_image
     def decode_qr_barcode(self):
         """Decodes QR codes or Barcodes."""
         if not qr_decode: raise ImportError("pyzbar not installed")
@@ -62,6 +68,7 @@ class FeatureMixin:
             })
         return results
 
+    @requires_image
     def ocr_text(self, lang='eng'):
         """Extracts text using Tesseract."""
         if not pytesseract: raise ImportError("pytesseract not installed")
