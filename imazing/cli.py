@@ -186,5 +186,14 @@ def qr(input: Path = _INPUT_ARG):
         typer.echo(f"[{r['type']}] {r['data']}")
 
 
+@app.command()
+def inspect(
+    input: Path = _INPUT_ARG,
+    output: Path = _OUTPUT_ARG,
+):
+    """Generate report of an image."""
+    im = _load_or_exit(input)
+    im.inspect(out_dir=output)
+
 if __name__ == "__main__":
     app()

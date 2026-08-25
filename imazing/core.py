@@ -39,6 +39,7 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
     def __init__(self, source: Union[str, np.ndarray, bytes, None] = None):
         self.image: Optional[np.ndarray] = None
         self.metadata = {}
+        self.source = "don't know bruh!!"
 
         if source is not None:
             self.load(source)
@@ -48,8 +49,10 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
     def load(self, source: Union[str, np.ndarray, bytes]):
         """Smart loader that detects source type (Path, URL, Bytes, Array)."""
         if isinstance(source, np.ndarray):
+            self.source = "np.ndarray"
             self.image = source.copy()
         elif isinstance(source, str):
+            self.source = source
             if source.startswith(('http://', 'https://')):
                 self._load_from_url(source)
             elif os.path.isfile(source):
@@ -62,6 +65,7 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
             elif source.startswith('data:image'):
                 self._load_from_base64(source)
         elif isinstance(source, bytes):
+            self.source = "bytes"
             self._load_from_bytes(source)
 
         if self.image is None:
@@ -142,6 +146,14 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
     @requires_image
     def to_numpy(self):
         return self.image.copy()
+
+    def clone(self):
+        """Returns an independent copy of this Imazing image."""
+        cloned = self.__class__()
+        cloned.image = self.image.copy() if self.image is not None else None
+        cloned.metadata = self.metadata.copy()
+        cloned.source = self.source
+        return cloned
 
     def show(self, window_name="Imazing Preview", wait=True):
         """Displays the image in a GUI window."""
