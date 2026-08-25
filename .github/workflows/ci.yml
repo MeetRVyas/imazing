@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      # tesseract-ocr / libzbar0 are the system-level binaries behind the
+      # ocr/qr extras (pytesseract and pyzbar are just Python bindings to
+      # them) -- installed here so those tests run for real instead of
+      # skipping in CI.
+      - name: Install system dependencies for the ocr/qr extras
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr libzbar0
+
+      - name: Install imazing with dev + full extras
+        run: pip install -e ".[dev,full]"
+
+      - name: Run tests
+        run: pytest tests/ -v --cov=imazing --cov-report=term-missing
+
+  build:
+    name: Validate packaging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install build tools
+        run: pip install build twine
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Validate package metadata
+        run: twine check dist/*
+
+      - name: Install the built wheel in a clean environment
+        run: |
+          python -m venv /tmp/verify-venv
+          /tmp/verify-venv/bin/pip install dist/*.whl
+          /tmp/verify-venv/bin/python -c "import imazing; print(imazing.__version__)"
+          /tmp/verify-venv/bin/imazing --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/

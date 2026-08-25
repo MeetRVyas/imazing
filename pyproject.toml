@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "imazing"
+version = "1.0.0"
+description = "A unified computer-vision toolkit: transforms, filters, detection, OCR, drawing, analysis, and video streaming behind one consistent, chainable API."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [
+    { name = "Meet Vyas" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+
+dependencies = [
+    # Pinned below 5.0: opencv-python/opencv-contrib-python 5.0.0.93 ships
+    # with an empty cv2/data directory (haarcascade XML files missing --
+    # open upstream bug, opencv/opencv-python#1244), which breaks
+    # detect_faces()'s default cascade path.
+    "opencv-contrib-python>=4.5,<5.0",
+    "numpy>=1.21",
+    "requests>=2.25",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+ocr = ["pytesseract>=0.3"]
+qr = ["pyzbar>=0.1"]
+desktop = ["pyautogui>=0.9", "pillow>=9.0"]
+full = ["pytesseract>=0.3", "pyzbar>=0.1", "pyautogui>=0.9", "pillow>=9.0"]
+dev = ["pytest>=7.0", "pytest-cov>=4.0", "qrcode[pil]>=7.0"]
+
+[project.urls]
+Repository = "https://github.com/MeetRVyas/imazing"
+
+[project.scripts]
+imazing = "imazing.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["imazing*"]
