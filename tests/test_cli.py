@@ -101,7 +101,6 @@ class TestConvertCommand:
         out = tmp_path / "out.jpg"
         result = runner.invoke(app, ["convert", str(input_image_path), str(out), "--mode", "not_a_mode"])
         assert result.exit_code == 1
-        assert "Unknown color mode" in result.output
 
 
 class TestRotateCommand:

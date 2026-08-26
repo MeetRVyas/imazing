@@ -90,7 +90,7 @@ class GeometryMixin:
 
         choice = random.choice(_available_types)
 
-        _method, _params = _AUGMENTATION_TYPES.get(choice)
+        _, _method, _params = _AUGMENTATION_TYPES.get(choice)
         _method(**_params)
 
         return self

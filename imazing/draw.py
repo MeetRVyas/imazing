@@ -23,17 +23,34 @@ class DrawMixin:
         return self
 
     @requires_image
-    def overlay_image(self, overlay_img, x = 0, y = 0, alpha = 0.5):
-        """Overlays another image (numpy array) with transparency."""
-        h, w = overlay_img.shape[:2]
-        if x < 0 or y < 0 or y + h > self.image.shape[0] or x + w > self.image.shape[1]:
-            # Simple boundary check: trim overlay if needed or just return
-            raise ValueError(
-                "Overlay image is outside the valid image boundaries."
-            )
-            return self
+    def overlay_image(self, overlay_img, x=0, y=0, alpha=0.5):
+        """Overlays another image (Imazing object / numpy array) with transparency."""
+        if not 0.0 <= alpha <= 1.0:
+            raise ValueError("alpha must be between 0.0 and 1.0.")
 
-        roi = self.image[y:y+h, x:x+w]
-        blended = cv2.addWeighted(roi, 1 - alpha, overlay_img, alpha, 0)
-        self.image[y:y+h, x:x+w] = blended
+        if not isinstance(overlay_img, np.ndarray):
+            overlay_img = overlay_img.to_numpy()
+        
+        h, w = overlay_img.shape[:2]
+        img_h, img_w = self.image.shape[:2]
+
+        # Intersect the overlay's bounding box (which may start negative or
+        # extend past the edges) with the base image's bounds.
+        dest_x0, dest_y0 = max(x, 0), max(y, 0)
+        dest_x1, dest_y1 = min(x + w, img_w), min(y + h, img_h)
+
+        if dest_x1 <= dest_x0 or dest_y1 <= dest_y0:
+            return self  # overlay doesn't touch the image at all
+
+        # The matching crop of the overlay itself,
+        # offset by however much was cut off on the left/top.
+        src_x0, src_y0 = dest_x0 - x, dest_y0 - y
+        src_x1 = src_x0 + (dest_x1 - dest_x0)
+        src_y1 = src_y0 + (dest_y1 - dest_y0)
+
+        roi = self.image[dest_y0:dest_y1, dest_x0:dest_x1]
+        overlay_crop = overlay_img[src_y0:src_y1, src_x0:src_x1]
+
+        blended = cv2.addWeighted(roi, 1 - alpha, overlay_crop, alpha, 0)
+        self.image[dest_y0:dest_y1, dest_x0:dest_x1] = blended
         return self

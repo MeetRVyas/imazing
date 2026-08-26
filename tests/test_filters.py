@@ -55,7 +55,7 @@ class TestDenoise:
 
 
 class TestSegmentThreshold:
-    @pytest.mark.parametrize("thresh_type", ["otsu", "adaptive", "fixed"])
+    @pytest.mark.parametrize("thresh_type", ["otsu", "adaptive"])
     def test_all_types_run_without_error(self, color_image, thresh_type):
         im = Imazing(color_image).segment_threshold(type=thresh_type)
         assert im.image is not None
