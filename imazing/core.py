@@ -14,7 +14,7 @@ from .features import FeatureMixin
 from .draw import DrawMixin
 from .analysis import AnalysisMixin
 from .exceptions import ImageLoadError
-from ._validation import requires_image
+from ._validation import requires_image, infer_color_space
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +38,8 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
 
     def __init__(self, source: Union[str, np.ndarray, bytes, None] = None):
         self.image: Optional[np.ndarray] = None
-        self.metadata = {}
         self.source = "don't know bruh!!"
+        self.color_space: Optional[str] = None
 
         if source is not None:
             self.load(source)
@@ -70,6 +70,8 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
 
         if self.image is None:
             raise ImageLoadError(f"Could not load image from source: {source!r}")
+
+        self.color_space = infer_color_space(self.image)
         return self
 
     def _load_from_url(self, url, timeout=10):
@@ -118,9 +120,9 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
         if ret: return cls(frame)
         return None
 
+    @requires_image
     def save(self, path, quality=95):
         """Saves image to disk. Handles format params automatically."""
-        if self.image is None: return
         ext = os.path.splitext(path)[1].lower()
         params = []
         if ext in ['.jpg', '.jpeg']:
@@ -147,17 +149,43 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
     def to_numpy(self):
         return self.image.copy()
 
+    @property
+    @requires_image
+    def channels(self) -> int:
+        """Number of channels in the currently loaded image."""
+        return self.image.shape[2] if self.image.ndim == 3 else 1
+
+    @property
+    @requires_image
+    def has_alpha(self) -> bool:
+        """True if the currently loaded image has a 4th (alpha) channel."""
+        return self.image.ndim == 3 and self.image.shape[2] == 4
+
+    @property
+    @requires_image
+    def metadata(self) -> bool:
+        """Structural metadata about the loaded image."""
+        return {
+            "width": self.image.shape[1],
+            "height": self.image.shape[0],
+            "channels": self.channels,
+            "color_space": self.color_space,
+            "dtype": str(self.image.dtype),
+            "has_alpha": self.has_alpha,
+        }
+
     def clone(self):
         """Returns an independent copy of this Imazing image."""
         cloned = self.__class__()
         cloned.image = self.image.copy() if self.image is not None else None
         cloned.metadata = self.metadata.copy()
         cloned.source = self.source
+        cloned.color_space = self.color_space
         return cloned
 
+    @requires_image
     def show(self, window_name="Imazing Preview", wait=True):
         """Displays the image in a GUI window."""
-        if self.image is None: return
         cv2.imshow(window_name, self.image)
         if wait:
             cv2.waitKey(0)
