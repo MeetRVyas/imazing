@@ -28,7 +28,7 @@ def requires_image(method):
 
 
 # Color-space bookkeeping ------------------------------------------------
-VALID_COLOR_SPACES = ('GRAY', 'BGR', 'RGB', 'HSV', 'LAB', 'BGRA')
+VALID_COLOR_SPACES = ('GRAY', 'BGR', 'RGB', 'HSV', 'LAB', 'BGRA', 'YUV')
 
 # BGR is the hub: every space converts to/from BGR directly, and a
 # transition between two non-BGR spaces (e.g. HSV -> LAB) is routed through
@@ -39,6 +39,7 @@ _TO_BGR = {
     'HSV': cv2.COLOR_HSV2BGR,
     'LAB': cv2.COLOR_Lab2BGR,
     'BGRA': cv2.COLOR_BGRA2BGR,
+    'YUV': cv2.COLOR_YUV2BGR,
 }
 
 _FROM_BGR = {
@@ -47,6 +48,7 @@ _FROM_BGR = {
     'HSV': cv2.COLOR_BGR2HSV,
     'LAB': cv2.COLOR_BGR2Lab,
     'BGRA': cv2.COLOR_BGR2BGRA,
+    'YUV': cv2.COLOR_BGR2YUV,
 }
 
 

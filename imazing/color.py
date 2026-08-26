@@ -1,16 +1,7 @@
 import cv2
 import numpy as np
 
-from ._validation import requires_image
-
-
-_VALID_COLOR_MODES = {
-    'GRAY' : cv2.COLOR_BGR2GRAY,
-    'HSV' : cv2.COLOR_BGR2HSV,
-    'RGB' : cv2.COLOR_BGR2RGB,
-    'LAB' : cv2.COLOR_BGR2Lab,
-    'BGR' : cv2.COLOR_GRAY2BGR
-}
+from ._validation import requires_image, convert_to, VALID_COLOR_SPACES
 
 
 class ColorMixin:
@@ -18,16 +9,21 @@ class ColorMixin:
 
     @requires_image
     def convert_color(self, mode='GRAY'):
-        """Converts color space. Options: GRAY, HSV, RGB, LAB, BGR."""
+        """Converts color space. Options: GRAY, HSV, RGB, LAB, BGR, BGRA.
+
+        Converts from the image's *actual current* color space.
+        """
         mode = mode.upper()
-        if mode not in _VALID_COLOR_MODES:
+        if mode not in VALID_COLOR_SPACES:
             raise ValueError(
                 f"Invalid colour mode '{mode}'. "
-                f"Valid modes are: {','.join(_VALID_COLOR_MODES)}."
+                f"Valid modes are: {','.join(VALID_COLOR_SPACES)}."
             )
 
-        elif mode != 'GRAY' or len(self.image.shape) == 3:
-            self.image = cv2.cvtColor(self.image, _VALID_COLOR_MODES.get(mode))
+        current = self.color_space or 'BGR'
+        if mode != current:
+            self.image = convert_to(self.image, current, mode)
+            self.color_space = mode
         return self
 
     @requires_image
@@ -43,12 +39,28 @@ class ColorMixin:
 
     @requires_image
     def histogram_equalization(self):
-        """Improves contrast (works best on grayscale or per channel)."""
-        if len(self.image.shape) == 2:
+        """Improves contrast. Works on any color space (not just BGR) by
+        equalizing luminance via a BGR/YUV round-trip, and leaves an
+        existing alpha channel untouched rather than equalizing it too."""
+        if self.image.ndim == 2:
             self.image = cv2.equalizeHist(self.image)
-        else:
-            # Convert to YUV, equalize Y, convert back
-            yuv = cv2.cvtColor(self.image, cv2.COLOR_BGR2YUV)
-            yuv[:,:,0] = cv2.equalizeHist(yuv[:,:,0])
-            self.image = cv2.cvtColor(yuv, cv2.COLOR_YUV2BGR)
+            return self
+
+        current = self.color_space or 'BGR'
+        image = self.image
+        alpha = None
+        color_space = current
+        if current == 'BGRA':
+            image, alpha = image[:, :, :3], image[:, :, 3]
+            color_space = 'BGR'  # BGRA's first 3 channels are plain BGR
+
+        # Convert to BGR, equalize the Y channel via YUV, convert back.
+        yuv = convert_to(image, color_space, 'YUV')
+        yuv[:, :, 0] = cv2.equalizeHist(yuv[:, :, 0])
+        result = convert_to(yuv, 'YUV', color_space)
+
+        if alpha is not None:
+            result = np.dstack([result, alpha])
+
+        self.image = result
         return self

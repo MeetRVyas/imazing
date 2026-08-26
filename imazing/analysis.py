@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from ._validation import requires_image
+from ._validation import requires_image, as_gray
 
 
 class AnalysisMixin:
@@ -13,7 +13,7 @@ class AnalysisMixin:
         return {
             "width": self.image.shape[1],
             "height": self.image.shape[0],
-            "channels": self.image.shape[2] if len(self.image.shape) > 2 else 1,
+            "channels": self.channels,
             "mean": np.mean(self.image),
             "std": np.std(self.image),
             "min": np.min(self.image),
@@ -21,10 +21,21 @@ class AnalysisMixin:
         }
 
     @requires_image
+    def get_metadata(self):
+        """Returns structural metadata about the loaded image: color space,
+        channel count, dtype, and whether an alpha channel is present.
+
+        Kept separate from get_stats() (which reports pixel statistics)
+        rather than adding these keys there, so existing get_stats() callers
+        see no change in its return shape.
+        """
+        return self.metadata
+
+    @requires_image
     def compute_hash(self, size=8):
         """Perceptive hash for duplicate detection (aHash)."""
         resized = cv2.resize(self.image, (size, size))
-        gray = cv2.cvtColor(resized, cv2.COLOR_BGR2GRAY)
+        gray = as_gray(resized, self.color_space)
         avg = gray.mean()
         diff = gray > avg
         return sum([2 ** i for (i, v) in enumerate(diff.flatten()) if v])
@@ -40,6 +51,7 @@ class AnalysisMixin:
         report = {
             "source": self.source,
             **self.get_stats(),
+            "color_space": self.color_space,
             "hash": self.compute_hash(),
         }
 
