@@ -35,6 +35,17 @@ class TestDetectContours:
         contours = Imazing(color_image).detect_contours(min_area=100)
         assert len(contours) >= 1
 
+    def test_runs_on_bgra_image_without_crashing(self, bgra_image):
+        contours = Imazing(bgra_image).detect_contours()
+        assert isinstance(contours, list)
+
+    def test_runs_on_already_hsv_image_without_crashing(self, color_image):
+        """Regression test: detect_contours used to assume any 3-channel
+        image was BGR, misreading HSV values as BGR instead of converting
+        from the image's actual current color space."""
+        contours = Imazing(color_image).convert_color("HSV").detect_contours()
+        assert isinstance(contours, list)
+
 
 class TestMatchTemplate:
     def test_finds_a_template_cropped_from_the_same_image(self, color_image):
@@ -54,6 +65,10 @@ class TestDetectFaces:
         # own logic -- we're testing that the call succeeds and returns a
         # sane type, not detection accuracy on synthetic noise.
         faces = Imazing(color_image).detect_faces()
+        assert hasattr(faces, "__len__")
+
+    def test_runs_on_bgra_image_without_crashing(self, bgra_image):
+        faces = Imazing(bgra_image).detect_faces()
         assert hasattr(faces, "__len__")
 
 

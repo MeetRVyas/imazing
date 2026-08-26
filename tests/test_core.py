@@ -106,7 +106,161 @@ class TestNoImageLoadedGuard:
             Imazing().resize(width=10)
 
 
-class TestSaveAndExport:
+class TestColorSpaceInference:
+    """Imazing.color_space should be inferred from channel count the moment
+    an image is loaded, regardless of which load path was used."""
+
+    def test_ndarray_3_channel_is_bgr(self, color_image):
+        assert Imazing(color_image).color_space == "BGR"
+
+    def test_ndarray_1_channel_is_gray(self, gray_image):
+        assert Imazing(gray_image).color_space == "GRAY"
+
+    def test_ndarray_4_channel_is_bgra(self, bgra_image):
+        assert Imazing(bgra_image).color_space == "BGRA"
+
+    def test_load_from_file_infers_from_the_decoded_array(self, color_image, tmp_path):
+        path = tmp_path / "test.png"
+        cv2.imwrite(str(path), color_image)
+        assert Imazing(str(path)).color_space == "BGR"
+
+    def test_load_from_bytes_infers_correctly(self, color_image):
+        _, buf = cv2.imencode(".png", color_image)
+        assert Imazing(buf.tobytes()).color_space == "BGR"
+
+    def test_clone_preserves_color_space(self, color_image):
+        im = Imazing(color_image).convert_color("HSV")
+        cloned = im.clone()
+        assert cloned.color_space == "HSV"
+
+    def test_reload_after_construction_updates_color_space(self, color_image, gray_image):
+        im = Imazing(color_image)
+        assert im.color_space == "BGR"
+        im.load(gray_image)
+        assert im.color_space == "GRAY"
+
+
+class TestMetadata:
+    def test_get_metadata_keys(self, color_image):
+        meta = Imazing(color_image).get_metadata()
+        assert set(meta.keys()) == {"width", "height", "channels", "color_space", "dtype", "has_alpha"}
+
+    def test_get_metadata_values_for_color_image(self, color_image):
+        h, w = color_image.shape[:2]
+        meta = Imazing(color_image).get_metadata()
+        assert meta["width"] == w
+        assert meta["height"] == h
+        assert meta["channels"] == 3
+        assert meta["color_space"] == "BGR"
+        assert meta["has_alpha"] is False
+
+    def test_get_metadata_for_bgra_image(self, bgra_image):
+        meta = Imazing(bgra_image).get_metadata()
+        assert meta["channels"] == 4
+        assert meta["color_space"] == "BGRA"
+        assert meta["has_alpha"] is True
+
+    def test_get_stats_keys_are_unchanged(self, color_image):
+        """get_metadata() was added as a separate method specifically so
+        get_stats()'s existing return shape doesn't change for callers."""
+        stats = Imazing(color_image).get_stats()
+        assert set(stats.keys()) == {"width", "height", "channels", "mean", "std", "min", "max"}
+
+    def test_get_metadata_before_load_raises(self):
+        with pytest.raises(NoImageLoadedError):
+            Imazing().get_metadata()
+
+
+class TestChannelsAndAlphaProperties:
+    def test_channels_property_color_image(self, color_image):
+        assert Imazing(color_image).channels == 3
+
+    def test_channels_property_gray_image(self, gray_image):
+        assert Imazing(gray_image).channels == 1
+
+    def test_channels_property_bgra_image(self, bgra_image):
+        assert Imazing(bgra_image).channels == 4
+
+    def test_has_alpha_false_for_bgr(self, color_image):
+        assert Imazing(color_image).has_alpha is False
+
+    def test_has_alpha_true_for_bgra(self, bgra_image):
+        assert Imazing(bgra_image).has_alpha is True
+
+    def test_channels_before_load_raises(self):
+        with pytest.raises(NoImageLoadedError):
+            Imazing().channels
+
+    def test_has_alpha_before_load_raises(self):
+        with pytest.raises(NoImageLoadedError):
+            Imazing().has_alpha
+
+
+class TestCropDoesNotShareMemory:
+    """Regression test: crop() used to return a numpy *view* into the
+    original array (self.image[y:y+h, x:x+w] with no .copy()), so the
+    full original buffer stayed alive in memory for as long as the crop
+    was referenced, and mutating one could silently affect the other."""
+
+    def test_crop_result_does_not_share_memory_with_original(self, color_image):
+        im = Imazing(color_image).crop(10, 10, 50, 40)
+        assert not np.shares_memory(im.image, color_image)
+
+    def test_mutating_crop_does_not_affect_original_source_array(self, color_image):
+        original = color_image.copy()
+        im = Imazing(color_image).crop(10, 10, 50, 40)
+        im.image[:] = 0
+        assert np.array_equal(color_image, original)
+
+
+class TestResizeInterpolation:
+    """resize() should auto-pick INTER_AREA when shrinking and
+    INTER_LINEAR when enlarging, rather than always using INTER_AREA."""
+
+    def test_default_uses_area_when_downscaling(self, color_image, monkeypatch):
+        import imazing.geometry as geometry_module
+
+        captured = {}
+        real_resize = geometry_module.cv2.resize
+
+        def spy_resize(img, dim, interpolation=None):
+            captured["interpolation"] = interpolation
+            return real_resize(img, dim, interpolation=interpolation)
+
+        monkeypatch.setattr(geometry_module.cv2, "resize", spy_resize)
+        Imazing(color_image).resize(width=40)  # smaller than the 160px original
+        assert captured["interpolation"] == cv2.INTER_AREA
+
+    def test_default_uses_linear_when_upscaling(self, color_image, monkeypatch):
+        import imazing.geometry as geometry_module
+
+        captured = {}
+        real_resize = geometry_module.cv2.resize
+
+        def spy_resize(img, dim, interpolation=None):
+            captured["interpolation"] = interpolation
+            return real_resize(img, dim, interpolation=interpolation)
+
+        monkeypatch.setattr(geometry_module.cv2, "resize", spy_resize)
+        Imazing(color_image).resize(width=320)  # larger than the 160px original
+        assert captured["interpolation"] == cv2.INTER_LINEAR
+
+    def test_explicit_inter_overrides_auto_selection(self, color_image, monkeypatch):
+        import imazing.geometry as geometry_module
+
+        captured = {}
+        real_resize = geometry_module.cv2.resize
+
+        def spy_resize(img, dim, interpolation=None):
+            captured["interpolation"] = interpolation
+            return real_resize(img, dim, interpolation=interpolation)
+
+        monkeypatch.setattr(geometry_module.cv2, "resize", spy_resize)
+        Imazing(color_image).resize(width=320, inter=cv2.INTER_NEAREST)
+        assert captured["interpolation"] == cv2.INTER_NEAREST
+
+
+
     def test_save_and_reload_roundtrip(self, color_image, tmp_path):
         path = tmp_path / "out.jpg"
         Imazing(color_image).save(str(path))
@@ -119,6 +273,13 @@ class TestSaveAndExport:
         Imazing(color_image).save(str(path))
         reloaded = Imazing(str(path))
         assert np.array_equal(reloaded.image, color_image)
+
+    def test_save_png_roundtrip_preserves_alpha_channel(self, bgra_image, tmp_path):
+        path = tmp_path / "out.png"
+        Imazing(bgra_image).save(str(path))
+        reloaded = Imazing(str(path))
+        assert reloaded.color_space == "BGRA"
+        assert np.array_equal(reloaded.image, bgra_image)
 
     def test_to_base64_returns_data_uri(self, color_image):
         uri = Imazing(color_image).to_base64()
@@ -141,11 +302,13 @@ class TestSaveFormats:
         Imazing(color_image).save(str(path))
         assert path.exists() and path.stat().st_size > 0
 
-    def test_save_before_load_is_a_noop_not_a_crash(self, tmp_path):
-        """save() intentionally no-ops with no image loaded, unlike the
-        other methods -- documenting/pinning that existing behavior."""
+    def test_save_before_load_raises_no_image_loaded_error(self, tmp_path):
+        """save() is now consistent with the rest of the API: it raises
+        NoImageLoadedError like every other operation, instead of the old
+        silent no-op."""
         path = tmp_path / "should_not_exist.jpg"
-        Imazing().save(str(path))
+        with pytest.raises(NoImageLoadedError):
+            Imazing().save(str(path))
         assert not path.exists()
 
 
@@ -244,12 +407,13 @@ class TestShow:
     entirely, so the wiring logic (wait flag, no-op with no image) is
     still verified."""
 
-    def test_noop_when_no_image_loaded(self, monkeypatch):
+    def test_raises_when_no_image_loaded(self, monkeypatch):
         import imazing.core as core_module
 
         mock_imshow = Mock()
         monkeypatch.setattr(core_module.cv2, "imshow", mock_imshow)
-        Imazing().show()
+        with pytest.raises(NoImageLoadedError):
+            Imazing().show()
         mock_imshow.assert_not_called()
 
     def test_wait_true_calls_waitkey_and_destroy(self, monkeypatch, color_image):

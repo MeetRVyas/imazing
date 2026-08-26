@@ -44,6 +44,8 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
         if source is not None:
             self.load(source)
 
+        self._metadata = self._calculate_metadata()
+
     # --- I/O Operations ---
 
     def load(self, source: Union[str, np.ndarray, bytes]):
@@ -163,8 +165,17 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
 
     @property
     @requires_image
-    def metadata(self) -> bool:
+    def metadata(self) -> dict:
         """Structural metadata about the loaded image."""
+        return self._metadata
+
+    @metadata.setter
+    def metadata(self, value: dict) -> None:
+        self._metadata = value
+
+    def _calculate_metadata(self) -> dict | None:
+        if self.image is None:
+            return None
         return {
             "width": self.image.shape[1],
             "height": self.image.shape[0],

@@ -72,7 +72,32 @@ class TestWarpPerspective:
         assert im.image.shape[:2] == (h, w)
 
 
-class TestAugmentRandom:
+class TestGeometryPreservesAlphaChannel:
+    """Geometry ops are generic over channel count in OpenCV already; these
+    pin that BGRA images keep all 4 channels through the common ops."""
+
+    def test_resize_preserves_4_channels(self, bgra_image):
+        im = Imazing(bgra_image).resize(width=80)
+        assert im.image.shape[2] == 4
+
+    def test_crop_preserves_4_channels(self, bgra_image):
+        im = Imazing(bgra_image).crop(10, 10, 50, 40)
+        assert im.image.shape[2] == 4
+
+    def test_rotate_preserves_4_channels(self, bgra_image):
+        im = Imazing(bgra_image).rotate(30)
+        assert im.image.shape[2] == 4
+
+    def test_flip_preserves_4_channels(self, bgra_image):
+        im = Imazing(bgra_image).flip(horizontal=True)
+        assert im.image.shape[2] == 4
+
+    def test_pad_preserves_4_channels(self, bgra_image):
+        im = Imazing(bgra_image).pad(top=5, bottom=5, left=5, right=5)
+        assert im.image.shape[2] == 4
+
+
+
     def test_augment_random_never_crashes_on_grayscale(self, gray_image):
         """Regression test: augment_random has a 1-in-4 chance of calling
         add_noise(), which used to crash on grayscale images."""

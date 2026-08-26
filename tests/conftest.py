@@ -25,3 +25,13 @@ def gray_image() -> np.ndarray:
 def small_color_image() -> np.ndarray:
     rng = np.random.default_rng(seed=1)
     return (rng.random((20, 20, 3)) * 255).astype(np.uint8)
+
+
+@pytest.fixture
+def bgra_image() -> np.ndarray:
+    """A small deterministic 4-channel (BGRA) image with a semi-transparent
+    rectangle, for exercising alpha-channel handling."""
+    rng = np.random.default_rng(seed=99)
+    img = (rng.random((120, 160, 4)) * 255).astype(np.uint8)
+    img[30:90, 40:100] = (255, 255, 255, 200)
+    return img

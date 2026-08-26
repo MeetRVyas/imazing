@@ -16,6 +16,14 @@ class TestBlur:
         im = Imazing(color_image).blur(method="gaussian", ksize=4)
         assert im.image.shape == color_image.shape
 
+    def test_bilateral_on_bgra_does_not_crash_and_preserves_alpha(self, bgra_image):
+        """Regression test: cv2.bilateralFilter only supports 1- or
+        3-channel images and raises on 4-channel input directly."""
+        original_alpha = bgra_image[:, :, 3].copy()
+        im = Imazing(bgra_image).blur(method="bilateral")
+        assert im.image.shape == bgra_image.shape
+        assert np.array_equal(im.image[:, :, 3], original_alpha)
+
 
 class TestSharpen:
     def test_sharpen_runs(self, color_image):
@@ -53,12 +61,31 @@ class TestDenoise:
         im = Imazing(gray_image).denoise(strength=5)
         assert im.image.shape == gray_image.shape
 
+    def test_denoise_bgra_does_not_crash_and_preserves_alpha(self, bgra_image):
+        """Regression test: fastNlMeansDenoisingColored requires exactly
+        3 channels and raises on 4-channel input directly."""
+        original_alpha = bgra_image[:, :, 3].copy()
+        im = Imazing(bgra_image).denoise(strength=5)
+        assert im.image.shape == bgra_image.shape
+        assert np.array_equal(im.image[:, :, 3], original_alpha)
+
 
 class TestSegmentThreshold:
     @pytest.mark.parametrize("thresh_type", ["otsu", "adaptive"])
     def test_all_types_run_without_error(self, color_image, thresh_type):
         im = Imazing(color_image).segment_threshold(type=thresh_type)
         assert im.image is not None
+
+    def test_runs_on_an_already_hsv_image(self, color_image):
+        """Regression test: segment_threshold used to assume any 3-channel
+        image was BGR; it should now convert from the image's actual
+        current color space instead."""
+        im = Imazing(color_image).convert_color("HSV").segment_threshold()
+        assert im.image.ndim == 2
+
+    def test_runs_on_bgra_image(self, bgra_image):
+        im = Imazing(bgra_image).segment_threshold()
+        assert im.image.ndim == 2
 
 
 class TestRemoveBackgroundGrabcut:
