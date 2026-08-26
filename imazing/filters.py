@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import warnings
 
 from ._validation import requires_image
 
@@ -71,11 +70,9 @@ class FilterMixin:
         if ksize % 2 == 0: ksize += 1 # Kernel must be odd
 
         if method not in _VALID_BLUR_MODES :
-            warnings.warn(
+            raise ValueError(
                 f"Blur method '{method}' is not supported. "
-                "Valid methods are: gaussian, median, box, bilateral. "
-                "Returning the image unchanged.",
-                UserWarning
+                f"Valid methods are: {', '.join(_VALID_BLUR_MODES.keys())}."
             )
         else :
             self.image = _VALID_BLUR_MODES.get(method)(self.image, ksize)
@@ -92,11 +89,9 @@ class FilterMixin:
     @requires_image
     def detect_edges(self, method='canny', t1=100, t2=200):
         if method not in _EDGE_DETECTION_METHODS :
-            warnings.warn(
+            raise ValueError(
                 f"Edge detection method '{method}' is not supported. "
-                "Valid methods are: canny, sobel. "
-                "Returning the image unchanged.",
-                UserWarning
+                f"Valid methods are: {', '.join(_EDGE_DETECTION_METHODS.keys())}."
             )
         else :
             self.image = _EDGE_DETECTION_METHODS.get(method)(self.image, t1, t2)
@@ -106,11 +101,9 @@ class FilterMixin:
     def morphological(self, op='erode', ksize=3, iterations=1):
         kernel = np.ones((ksize, ksize), np.uint8)
         if op not in _MORPHS :
-            warnings.warn(
+            raise ValueError(
                 f"Morphological operation '{op}' is not supported. "
-                f"Valid operations are: {', '.join(_MORPHS.keys())}. "
-                "Returning the image unchanged.",
-                UserWarning
+                f"Valid operations are: {', '.join(_MORPHS.keys())}."
             )
         else :
             self.image = cv2.morphologyEx(self.image, _MORPHS.get(op), kernel, iterations=iterations)
@@ -130,13 +123,11 @@ class FilterMixin:
         gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY) if len(self.image.shape) == 3 else self.image
 
         if type not in _THRESHOLD_TYPES :
-            type = "default"
-            warnings.warn(
+            raise ValueError(
                 f"Threshold type '{type}' is not supported. "
-                "Valid types are: otsu, adaptive.",
-                UserWarning
+                f"Valid types are: {', '.join(_THRESHOLD_TYPES.keys())}."
             )
-        self.image = _THRESHOLD_TYPES.get(type)(gray, val = val)
+        self.image = _THRESHOLD_TYPES.get(type)(gray, val=val)
         return self
 
     @requires_image
@@ -154,11 +145,9 @@ class FilterMixin:
     def add_noise(self, noise_type="gaussian"):
         """Adds noise in-place. Works on both grayscale and color images."""
         if noise_type not in _NOISE_TYPES :
-            warnings.warn(
-                f"Noise type '{type}' is not supported. "
-                "Valid types are: gaussian, salt_pepper. "
-                "Returning the image unchanged.",
-                UserWarning
+            raise ValueError(
+                f"Noise type '{noise_type}' is not supported. "
+                f"Valid types are: {', '.join(_NOISE_TYPES.keys())}."
             )
         else :
             self.image = _NOISE_TYPES.get(noise_type)(self.image)

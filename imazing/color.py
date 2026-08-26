@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import warnings
 
 from ._validation import requires_image
 
@@ -22,10 +21,9 @@ class ColorMixin:
         """Converts color space. Options: GRAY, HSV, RGB, LAB, BGR."""
         mode = mode.upper()
         if mode not in _VALID_COLOR_MODES:
-            warnings.warn(
-                f"Unknown color mode {mode!r}. Expected one of: "
-                f"{', '.join(_VALID_COLOR_MODES.keys())}.",
-                UserWarning
+            raise ValueError(
+                f"Invalid colour mode '{mode}'. "
+                f"Valid modes are: {','.join(_VALID_COLOR_MODES)}."
             )
 
         elif mode != 'GRAY' or len(self.image.shape) == 3:

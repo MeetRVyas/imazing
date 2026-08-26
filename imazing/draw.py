@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import warnings
 
 from ._validation import requires_image
 
@@ -29,10 +28,8 @@ class DrawMixin:
         h, w = overlay_img.shape[:2]
         if x < 0 or y < 0 or y + h > self.image.shape[0] or x + w > self.image.shape[1]:
             # Simple boundary check: trim overlay if needed or just return
-            warnings.warn(
-                "Overlay image is outside the valid image boundaries. "
-                "Returning the original image unchanged.",
-                UserWarning
+            raise ValueError(
+                "Overlay image is outside the valid image boundaries."
             )
             return self
 
