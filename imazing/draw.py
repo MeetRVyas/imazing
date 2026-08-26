@@ -4,21 +4,40 @@ import numpy as np
 from ._validation import requires_image
 
 
+def _normalize_color(image, color):
+    """Extends or truncates a color tuple to match the image's channel
+    count. Without this, drawing on a BGRA image with a plain 3-value BGR
+    color leaves the alpha channel at 0 (OpenCV zero-fills channels the
+    color tuple doesn't specify) -- the shape is drawn but fully
+    transparent, with no error to indicate anything went wrong.
+    """
+    channels = image.shape[2] if image.ndim == 3 else 1
+    color = tuple(color)
+    if len(color) < channels:
+        color = color + (255,) * (channels - len(color))
+    elif len(color) > channels:
+        color = color[:channels]
+    return color
+
+
 class DrawMixin:
     """Handles Annotation and Overlays"""
 
     @requires_image
     def draw_rect(self, x, y, w, h, color=(0, 255, 0), thickness=2):
+        color = _normalize_color(self.image, color)
         cv2.rectangle(self.image, (x, y), (x+w, y+h), color, thickness)
         return self
 
     @requires_image
     def draw_circle(self, x, y, r, color=(0, 0, 255), thickness=-1):
+        color = _normalize_color(self.image, color)
         cv2.circle(self.image, (x, y), r, color, thickness)
         return self
 
     @requires_image
     def draw_text(self, text, x, y, size=1.0, color=(255, 255, 255), thickness=1):
+        color = _normalize_color(self.image, color)
         cv2.putText(self.image, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, size, color, thickness)
         return self
 
