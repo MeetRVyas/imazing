@@ -10,8 +10,15 @@ class GeometryMixin:
     """Handles Shape, Size, and Orientation"""
 
     @requires_image
-    def resize(self, width=None, height=None, inter=cv2.INTER_AREA):
-        """Resizes while optionally preserving aspect ratio."""
+    def resize(self, width=None, height=None, inter=None):
+        """Resizes while optionally preserving aspect ratio.
+
+        `inter` defaults to an automatic choice based on the resize
+        direction: INTER_AREA (best for shrinking, per OpenCV's own
+        guidance) when the result is smaller than the original, INTER_LINEAR
+        (better quality than area-averaging for enlarging) when it's
+        larger. Pass an explicit `inter=` to override the automatic choice.
+        """
         h, w = self.image.shape[:2]
         if width is None and height is None: return self
 
@@ -24,13 +31,22 @@ class GeometryMixin:
         else:
             dim = (width, height)
 
+        if inter is None:
+            is_upscale = (dim[0] * dim[1]) > (w * h)
+            inter = cv2.INTER_LINEAR if is_upscale else cv2.INTER_AREA
+
         self.image = cv2.resize(self.image, dim, interpolation=inter)
         return self
 
     @requires_image
     def crop(self, x, y, w, h):
-        """Crops a region."""
-        self.image = self.image[y:y+h, x:x+w]
+        """Crops a region.
+
+        Returns an independent copy rather than a view into the original
+        array, so the source image's full buffer isn't kept alive in memory
+        just because a small crop of it is still referenced.
+        """
+        self.image = self.image[y:y+h, x:x+w].copy()
         return self
 
     @requires_image

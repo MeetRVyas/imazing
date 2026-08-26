@@ -1,14 +1,24 @@
 import cv2
 import numpy as np
 
-from ._validation import requires_image
+from ._validation import requires_image, as_gray
+
+
+def _apply_bilateral(img, ksize):
+    # cv2.bilateralFilter only supports 1- or 3-channel 8-bit images; a
+    # 4-channel (BGRA) image would otherwise raise a cv2 error. Filter just
+    # the color channels and reattach the original alpha unchanged.
+    if img.ndim == 3 and img.shape[2] == 4:
+        bgr, alpha = img[:, :, :3], img[:, :, 3]
+        return np.dstack([cv2.bilateralFilter(bgr, 9, 75, 75), alpha])
+    return cv2.bilateralFilter(img, 9, 75, 75)
 
 
 _VALID_BLUR_MODES = {
     "gaussian" : lambda img, ksize : cv2.GaussianBlur(img, (ksize, ksize), 0),
     "median" : lambda img, ksize : cv2.medianBlur(img, ksize),
     "box" : lambda img, ksize : cv2.blur(img, (ksize, ksize)),
-    "bilateral" : lambda img, ksize : cv2.bilateralFilter(img, 9, 75, 75),
+    "bilateral" : _apply_bilateral,
 }
 
 _MORPHS = {
@@ -112,7 +122,13 @@ class FilterMixin:
     @requires_image
     def denoise(self, strength=10):
         """Removes noise while keeping details."""
-        if len(self.image.shape) == 3:
+        if self.image.ndim == 3 and self.image.shape[2] == 4:
+            # fastNlMeansDenoisingColored requires exactly 3 channels;
+            # denoise the color channels and keep alpha unchanged.
+            bgr, alpha = self.image[:, :, :3], self.image[:, :, 3]
+            denoised = cv2.fastNlMeansDenoisingColored(bgr, None, strength, 10, 7, 21)
+            self.image = np.dstack([denoised, alpha])
+        elif len(self.image.shape) == 3:
             self.image = cv2.fastNlMeansDenoisingColored(self.image, None, strength, 10, 7, 21)
         else:
             self.image = cv2.fastNlMeansDenoising(self.image, None, strength, 7, 21)
@@ -120,7 +136,7 @@ class FilterMixin:
 
     @requires_image
     def segment_threshold(self, type='otsu', val=127):
-        gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY) if len(self.image.shape) == 3 else self.image
+        gray = as_gray(self.image, self.color_space)
 
         if type not in _THRESHOLD_TYPES :
             raise ValueError(
