@@ -5,6 +5,8 @@ from the terminal -- resize a batch of images, check a photo's stats,
 pull text off a screenshot, and so on.
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 from typing import Optional

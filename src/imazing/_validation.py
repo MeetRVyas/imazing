@@ -1,5 +1,7 @@
 """Shared helpers. Not part of the public API."""
 
+from __future__ import annotations
+
 import functools
 
 import cv2
