@@ -9,7 +9,7 @@ description = "A unified computer-vision toolkit: transforms, filters, detection
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "Meet Vyas" }
 ]
