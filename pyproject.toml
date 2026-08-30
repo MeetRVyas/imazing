@@ -41,14 +41,25 @@ dependencies = [
 ocr = ["pytesseract>=0.3"]
 qr = ["pyzbar>=0.1"]
 desktop = ["pyautogui>=0.9", "pillow>=9.0"]
-full = ["pytesseract>=0.3", "pyzbar>=0.1", "pyautogui>=0.9", "pillow>=9.0"]
-dev = ["pytest>=7.0", "pytest-cov>=4.0", "qrcode[pil]>=7.0"]
+full = [
+    "pytesseract>=0.3",
+    "pyzbar>=0.1",
+    "pyautogui>=0.9",
+    "pillow>=9.0"
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "qrcode[pil]>=7.0"
+]
 
 [project.urls]
+Homepage = "https://github.com/MeetRVyas/imazing"
 Repository = "https://github.com/MeetRVyas/imazing"
+Issues = "https://github.com/MeetRVyas/imazing/issues"
 
 [project.scripts]
 imazing = "imazing.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["imazing*"]
+where = ["src"]
