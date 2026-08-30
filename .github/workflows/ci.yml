@@ -35,6 +35,11 @@ jobs:
 
       - name: Install imazing with dev + full extras
         run: pip install -e ".[dev,full]"
+      
+      - name: Show CLI dependency versions
+        run: |
+          python --version
+          python -c "import typer, click; print('typer:', typer.__version__); print('click:', click.__version__)"
 
       - name: Run tests
         run: pytest tests/ -v --cov=imazing --cov-report=term-missing
