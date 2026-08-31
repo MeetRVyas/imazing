@@ -155,6 +155,18 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
 
     @property
     @requires_image
+    def shape(self) -> int:
+        """Shape of the currently loaded image."""
+        return self.image.shape
+
+    @property
+    @requires_image
+    def ndim(self) -> int:
+        """Number of dimensions in the currently loaded image."""
+        return self.image.ndim
+
+    @property
+    @requires_image
     def channels(self) -> int:
         """Number of channels in the currently loaded image."""
         return self.image.shape[2] if self.image.ndim == 3 else 1
@@ -164,6 +176,18 @@ class Imazing(GeometryMixin, ColorMixin, FilterMixin, FeatureMixin, DrawMixin, A
     def has_alpha(self) -> bool:
         """True if the currently loaded image has a 4th (alpha) channel."""
         return self.image.ndim == 3 and self.image.shape[2] == 4
+
+    def __getattr__(self, name):
+        """Forward unknown attributes to the underlying image."""
+        if self.image is not None:
+            try:
+                return getattr(self.image, name)
+            except AttributeError:
+                pass
+
+        raise AttributeError(
+            f"{type(self).__name__!r} object has no attribute {name!r}"
+        )
 
     @property
     @requires_image
