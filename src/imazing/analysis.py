@@ -23,17 +23,6 @@ class AnalysisMixin:
         }
 
     @requires_image
-    def get_metadata(self):
-        """Returns structural metadata about the loaded image: color space,
-        channel count, dtype, and whether an alpha channel is present.
-
-        Kept separate from get_stats() (which reports pixel statistics)
-        rather than adding these keys there, so existing get_stats() callers
-        see no change in its return shape.
-        """
-        return self.metadata
-
-    @requires_image
     def compute_hash(self, size=8):
         """Perceptive hash for duplicate detection (aHash)."""
         resized = cv2.resize(self.image, (size, size))

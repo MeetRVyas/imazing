@@ -55,9 +55,8 @@ _FROM_BGR = {
 
 
 def infer_color_space(image):
-    """Best-effort guess of an array's color space from its shape alone, 
-    used the moment an image is loaded.
-    1/3/4-channel -> GRAY/BGR/BGRA"""
+    """Best-effort guess of an array's color space from its shape alone, used the moment an image is loaded.
+    1/3/4-channel -> GRAY/BGR/BGRA convention."""
     if image is None:
         return None
     if image.ndim == 2 or (image.ndim == 3 and image.shape[2] == 1):
