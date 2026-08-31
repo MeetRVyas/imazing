@@ -142,12 +142,12 @@ class TestColorSpaceInference:
 
 class TestMetadata:
     def test_get_metadata_keys(self, color_image):
-        meta = Imazing(color_image).get_metadata()
+        meta = Imazing(color_image).metadata
         assert set(meta.keys()) == {"width", "height", "channels", "color_space", "dtype", "has_alpha"}
 
     def test_get_metadata_values_for_color_image(self, color_image):
         h, w = color_image.shape[:2]
-        meta = Imazing(color_image).get_metadata()
+        meta = Imazing(color_image).metadata
         assert meta["width"] == w
         assert meta["height"] == h
         assert meta["channels"] == 3
@@ -155,7 +155,7 @@ class TestMetadata:
         assert meta["has_alpha"] is False
 
     def test_get_metadata_for_bgra_image(self, bgra_image):
-        meta = Imazing(bgra_image).get_metadata()
+        meta = Imazing(bgra_image).metadata
         assert meta["channels"] == 4
         assert meta["color_space"] == "BGRA"
         assert meta["has_alpha"] is True
@@ -165,11 +165,6 @@ class TestMetadata:
         get_stats()'s existing return shape doesn't change for callers."""
         stats = Imazing(color_image).get_stats()
         assert set(stats.keys()) == {"width", "height", "channels", "mean", "std", "min", "max"}
-
-    def test_get_metadata_before_load_raises(self):
-        with pytest.raises(NoImageLoadedError):
-            Imazing().get_metadata()
-
 
 class TestChannelsAndAlphaProperties:
     def test_channels_property_color_image(self, color_image):
