@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name="imazing",
-    version="1.0.0",
+    version="1.0.1",
     description="A complete linrary for Image Processing in Python",
-    author="Your Name",
+    author="Meet Vyas \& Prince Koladiya",
     packages=find_packages(),
     install_requires=[
         "opencv-python",
