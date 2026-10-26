@@ -6,12 +6,16 @@
 
 **load → transform → detect → save, one call each, no boilerplate glue in between.**
 
+<div align = "center">
 <!-- [![PyPI](https://img.shields.io/pypi/v/imazing)](https://pypi.org/project/imazing/) -->
 <!-- [![Python versions](https://img.shields.io/pypi/pyversions/imazing)](https://pypi.org/project/imazing/) -->
 <!-- [![Python versions](https://img.shields.io/pypi/pyversions/imazing?style=for-the-badge&logo=python&logoColor=white&label=Python&labelColor=000000&color=ffffff)](https://test.pypi.org/project/imazing/) -->
-[![CI](https://github.com/MeetRVyas/imazing/actions/workflows/ci.yml/badge.svg)](https://github.com/MeetRVyas/imazing/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/github/license/MeetRVyas/imazing)](LICENSE) [![PyPI](https://img.shields.io/pypi/v/imazing?style=for-the-badge&logo=pypi&logoColor=white&label=PyPI&labelColor=000000&color=ffffff)](https://test.pypi.org/project/imazing/)
+[![CI](https://github.com/MeetRVyas/imazing/actions/workflows/ci.yml/badge.svg)](https://github.com/MeetRVyas/imazing/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/github/license/MeetRVyas/imazing)](LICENSE)
+<!-- [![PyPI](https://img.shields.io/pypi/v/imazing?style=for-the-badge&logo=pypi&logoColor=white&label=PyPI&labelColor=000000&color=ffffff)](https://test.pypi.org/project/imazing/) -->
 
 [![CI](https://img.shields.io/github/actions/workflow/status/MeetRVyas/imazing/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI&labelColor=000000&color=ffffff)](https://github.com/MeetRVyas/imazing/actions/workflows/ci.yml) [![OpenCV](https://img.shields.io/badge/OpenCV-000000?style=for-the-badge&logo=opencv&logoColor=ffffff)](https://opencv.org/) [![License: MIT](https://img.shields.io/github/license/MeetRVyas/imazing?style=for-the-badge&logo=opensourceinitiative&logoColor=white&label=License&labelColor=000000&color=ffffff)](LICENSE)
+
+</div>
 
 ## Why this exists
 
